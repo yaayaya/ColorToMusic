@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ColorToMusic - 圖片轉音樂</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 ColorToMusic</h1>
+            <p>將圖片的色彩轉換為美妙的音樂</p>
+            <a href="test.html" style="color: rgba(255,255,255,0.8); text-decoration: none; font-size: 0.9em;">🧪 測試範例圖片</a>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p>點擊或拖曳圖片到這裡</p>
+                    <span>支援 JPG、PNG 格式</span>
+                    <input type="file" id="imageInput" accept="image/*" hidden>
+                </div>
+                <div class="image-preview" id="imagePreview" style="display: none;">
+                    <img id="previewImg" alt="預覽圖片">
+                    <div class="mapping-preview">
+                        <h4>映射預覽</h4>
+                        <div class="preview-container">
+                            <div class="preview-item">
+                                <span>原圖</span>
+                                <canvas id="originalCanvas" width="200" height="200"></canvas>
+                            </div>
+                            <div class="preview-item">
+                                <span id="mappingLabel">亮度映射</span>
+                                <canvas id="mappedCanvas" width="200" height="200"></canvas>
+                            </div>
+                        </div>
+                        <div class="preview-stats">
+                            <span>數值範圍: <span id="valueRangeDisplay">-</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-section">
+                <div class="control-group">
+                    <label for="scanDirection">掃描方向:</label>
+                    <select id="scanDirection">
+                        <option value="left-right">從左到右 (橫向音樂流)</option>
+                        <option value="top-down">從上到下 (縱向音樂流)</option>
+                        <option value="diagonal">對角線 (螺旋音樂流)</option>
+                    </select>
+                    <div class="scan-direction-info">
+                        <span id="scanDirectionDesc">橫向掃描：適合風景照，產生流暢的左右音樂變化</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="mappingMethod">映射方式:</label>
+                    <select id="mappingMethod">
+                        <option value="brightness">亮度</option>
+                        <option value="vividness">鮮豔度</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>頻率範圍:</label>
+                    <div class="frequency-range">
+                        <span>低音</span>
+                        <input type="range" id="minFreq" min="100" max="880" value="220" step="10">
+                        <span id="minFreqValue">220 Hz</span>
+                    </div>
+                    <div class="frequency-range">
+                        <span>高音</span>
+                        <input type="range" id="maxFreq" min="440" max="3520" value="1760" step="10">
+                        <span id="maxFreqValue">1760 Hz</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="enablePitchLimit">音高限制:</label>
+                    <select id="enablePitchLimit">
+                        <option value="none">無限制 (使用全頻率範圍)</option>
+                        <option value="musical">音樂限制 (舒適聽覺範圍)</option>
+                        <option value="custom">自訂限制</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="pitchLimitGroup" style="display: none;">
+                    <label>音高限制範圍:</label>
+                    <div class="frequency-range">
+                        <span>最低音</span>
+                        <input type="range" id="minPitch" min="80" max="440" value="130" step="5">
+                        <span id="minPitchValue">130 Hz (C3)</span>
+                    </div>
+                    <div class="frequency-range">
+                        <span>最高音</span>
+                        <input type="range" id="maxPitch" min="440" max="2000" value="1047" step="5">
+                        <span id="maxPitchValue">1047 Hz (C6)</span>
+                    </div>
+                    <div class="pitch-limit-info">
+                        <span id="pitchLimitDesc">音樂限制：限制在舒適的聽覺範圍內，避免過低或過高的音頻</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="duration">音樂長度 (秒):</label>
+                    <input type="number" id="duration" value="10" min="1" max="60" step="1">
+                </div>
+
+                <div class="control-group">
+                    <label for="pixelSkip">像素處理方式:</label>
+                    <select id="pixelProcessing">
+                        <option value="skip">像素跳躍 (快速)</option>
+                        <option value="average">像素平均 (品質)</option>
+                        <option value="all">全部處理 (完整)</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="pixelSkipGroup">
+                    <label for="pixelSkip">跳躍/平均數值:</label>
+                    <input type="number" id="pixelSkip" value="1" min="1" max="20" step="1">
+                    <div class="pixel-processing-info">
+                        <span id="pixelProcessingDesc">跳躍模式：每N個像素取1個，快速但可能丟失細節</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="noteLength">音符長度 (秒):</label>
+                    <input type="range" id="noteLength" min="0.05" max="1.0" value="0.2" step="0.05">
+                    <span id="noteLengthValue">0.2 秒</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="restRatio">休止符比例 (%):</label>
+                    <input type="range" id="restRatio" min="0" max="50" value="10" step="5">
+                    <span id="restRatioValue">10%</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="noteGrouping">音符分組:</label>
+                    <select id="noteGrouping">
+                        <option value="none">無分組</option>
+                        <option value="simple">簡單分組</option>
+                        <option value="advanced">智慧分組</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="noteConnection">音符連貫性:</label>
+                    <select id="noteConnection">
+                        <option value="discrete">離散音符 (跳躍感)</option>
+                        <option value="legato">連奏 (平滑過渡)</option>
+                        <option value="glissando">滑音 (連續滑動)</option>
+                    </select>
+                    <div class="connection-info">
+                        <span id="connectionDesc">離散音符：每個音符獨立，適合節奏感強的圖片</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <button id="generateBtn" disabled>🎵 產生音樂</button>
+                <button id="playBtn" disabled>▶️ 播放</button>
+                <button id="stopBtn" disabled>⏹️ 停止</button>
+                <button id="downloadBtn" disabled>💾 下載音檔</button>
+            </div>
+
+            <div class="visualization-section" style="display: none;">
+                <h3>音樂視覺化</h3>
+                <canvas id="waveformCanvas" width="800" height="200"></canvas>
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <div class="info-item">
+                    <span class="label">圖片尺寸:</span>
+                    <span id="imageSize">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">總像素數:</span>
+                    <span id="totalPixels">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">預估音符數:</span>
+                    <span id="estimatedNotes">-</span>
+                </div>
+            </div>
+
+            <div class="rhythm-tips">
+                <h4>🎵 節奏調整說明</h4>
+                <ul>
+                    <li><strong>音符長度</strong>：控制每個音符的持續時間，越長越悠揚</li>
+                    <li><strong>休止符比例</strong>：在音符間加入靜默，減少急促感</li>
+                    <li><strong>音符分組</strong>：合併相似像素，大幅減少音符數量</li>
+                    <li><strong>音符連貫性</strong>：控制音符間的銜接方式，影響流暢度</li>
+                    <li><strong>音高限制</strong>：限制音符在舒適的聽覺範圍內</li>
+                    <li><strong>像素跳躍</strong>：跳過像素以縮短音樂，加快處理速度</li>
+                </ul>
+                <p><strong>建議</strong>：音符長度設為 0.3-0.5 秒，休止符 20-30%，使用智慧分組，連奏模式，音樂限制</p>
+                
+                <div class="pitch-limit-explanation">
+                    <h5>🎼 音高限制說明</h5>
+                    <ul>
+                        <li><strong>無限制</strong>：使用完整頻率範圍，可能產生極高或極低音 🔊</li>
+                        <li><strong>音樂限制</strong>：限制在 C3-C6 (130-1047 Hz)，舒適聽覺範圍 🎵</li>
+                        <li><strong>自訂限制</strong>：手動設定範圍，超出的音符會轉置到相同音高的其他八度 🎛️</li>
+                    </ul>
+                    <p class="tip">💡 音高限制使用八度轉置技術，保持音樂的相對關係</p>
+                </div>
+                
+                <div class="connection-explanation">
+                    <h5>🎼 連貫性效果說明</h5>
+                    <ul>
+                        <li><strong>離散音符</strong>：每個音符獨立，清晰分離 🎯</li>
+                        <li><strong>連奏</strong>：音符重疊，平滑過渡 🌊</li>
+                        <li><strong>滑音</strong>：頻率連續變化，如小提琴效果 🎻</li>
+                    </ul>
+                </div>
+                
+                <div class="pixel-skip-explanation">
+                    <h5>📊 像素跳躍詳解</h5>
+                    <p><strong>768×768 圖片範例 (589,824 像素)：</strong></p>
+                    <ul>
+                        <li>跳躍=1：處理 589,824 像素 (100% 細節，很慢) ⏱️</li>
+                        <li>跳躍=3：處理 196,608 像素 (33% 細節，快速) ✅</li>
+                        <li>跳躍=5：處理 117,965 像素 (20% 細節，很快) ✅</li>
+                        <li><span class="auto-adjust">自動調整=5：</span>處理 117,965 像素 (平衡效率與細節)</li>
+                    </ul>
+                    <p class="tip">💡 新策略：768×768 圖片自動調整跳躍為 5，保留 20% 細節</p>
+                    <p class="manual-tip">🎛️ 你可以手動設定跳躍值來覆蓋自動調整</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="colorToMusic.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
